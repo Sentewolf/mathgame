@@ -123,13 +123,13 @@ function task_value (limit=10)
 }
 
 
-function task_sum_singledigit (limit=10)
+function task_sum_singledigit (limit=10, sorted=true)
 {
     v3 = Phaser.Math.Between(2, Math.min(18, limit));
     v1 = Phaser.Math.Between(Math.max(1, v3-9), Math.min(v3-1, 9));
     v2 = v3 - v1
 
-    if (v2>v1)
+    if (sorted && v2>v1)
     {
         v4 = v1;
         v1 = v2;
@@ -140,15 +140,38 @@ function task_sum_singledigit (limit=10)
 }
 
 
-function task_sum (limit=10)
+function task_sum (limit=10, sorted=true)
 {
     v3 = Phaser.Math.Between(2, limit);
     v1 = Phaser.Math.Between(1, v3-1);
     v2 = v3 - v1
 
+    if (sorted && v2>v1) {
+        v4 = v1;
+        v1 = v2;
+        v2 = v4;
+    }
+
     target_text.setText(v1 + " + " + v2);
     solution = v3.toString();
 }
+
+function task_sum_ten (sorted=true)
+{
+    v3 = 10;
+    v1 = Phaser.Math.Between(1, v3-1);
+    v2 = v3 - v1
+
+    if (sorted && v2>v1) {
+        v4 = v1;
+        v1 = v2;
+        v2 = v4;
+    }
+
+    target_text.setText(v1 + " + " + v2);
+    solution = v3.toString();
+}
+
 
 
 function new_task ()
@@ -157,30 +180,51 @@ function new_task ()
 
     target.y = 0;
     target.x = Phaser.Math.Between(50, 750);
-    target.setVelocity(0, speed);
 
-    randval = Phaser.Math.Between(0, 100)
-    if (randval <= 20)
-    {
-        task_value(limit=10)
+    n_tasks = 5
+
+    probabilities = [];
+    sum = 0;
+    for (i = 0; i < n_tasks; i++) {
+        value = Math.exp(-0.5 * Math.pow((speed - i * 80) / (50), 2));
+        sum += value;
+        probabilities[i] = value;
     }
-    else if (randval <= 40)
-    {
-        task_value(limit=100)
+    
+    randval = Phaser.Math.FloatBetween(0, sum)
+
+    task_index = 0;
+    sum = probabilities[task_index];
+    while (sum<=randval && task_index<n_tasks-1) {
+        task_index+=1
+        sum += probabilities[task_index]
     }
-    else
-    {
-        task_sum_singledigit(limit=12)
-    }// task_value(limit=100)
-    // task_sum(limit=50);
 
-    // v1 = Phaser.Math.Between(1, 9);
-    // v2 = Phaser.Math.Between(1, 9);
-    // v3 = v1 + v2;
+    switch(task_index) {
+        case 0:
+            task_value(limit=10);
+            break;
+        case 1:
+            task_value(limit=100);
+            break;
+        case 3:
+            task_sum_ten();
+            break;
+        case 4:
+            task_sum_singledigit(limit=12);
+            break;
+        case 5:
+            task_sum(limit=20, sorted=true);
+            break;
+        case 6:
+            task_sum_singledigit(limit=12, sorted=false);
+            break;
+        case 7:
+            task_sum(limit=20, sorted=false);
+            break;
+    }
 
-    // target_text.setText(v1 + " + " + v2);
-    // solution = v3.toString();
-
+    target.setVelocity(0, speed / (1 + 0.5*task_index));
 }
 
 function update (time, delta)
